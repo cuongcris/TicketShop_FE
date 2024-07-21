@@ -38,6 +38,7 @@ function Home() {
     </>
   );
 }
+
 const MovieTabs = [
   {
     id: "phim-dang-chieu",
@@ -50,8 +51,11 @@ const MovieTabs = [
     href: "/phim-sap-chieu",
   },
 ];
+
 function Movies() {
   const [tab, setTab] = useState(MovieTabs[0].id);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentSlide, setCurrentSlide] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
 
   const { isLoading, isError, error, data } = useQuery<Movie[]>(
@@ -59,40 +63,71 @@ function Movies() {
     async () => {
       const res = await appfetch(`/Movies`);
       const data = await res.data;
+      const currentDate = new Date();
+
+      // Filter movies based on tab
+      if (tab === "phim-dang-chieu") {
+        return data.filter(
+          (movie: { releaseDate: string | number | Date }) =>
+            new Date(movie.releaseDate) <= currentDate
+        );
+      } else if (tab === "phim-sap-chieu") {
+        return data.filter(
+          (movie: { releaseDate: string | number | Date }) =>
+            new Date(movie.releaseDate) > currentDate
+        );
+      }
+
       return data;
     }
   );
 
   function handleNext() {
-    //Scroll to next
-    if (sliderRef.current) {
-      sliderRef.current.scrollBy({
-        // to right 1 screen
-        left: 180 * 6 + 10,
-        behavior: "smooth",
-      });
+    if (data) {
+      setCurrentSlide((prevSlide) => (prevSlide + 4) % data.length);
     }
   }
 
   function handlePrev() {
-    //Scroll to prev
-    if (sliderRef.current) {
-      sliderRef.current.scrollBy({
-        left: -180 * 6 - 10,
-        behavior: "smooth",
-      });
+    if (data) {
+      setCurrentSlide(
+        (prevSlide) => (prevSlide - 4 + data.length) % data.length
+      );
     }
   }
+
+  // Filter movies based on search term
+  const filteredMovies = data?.filter((movie) =>
+    movie.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getVisibleMovies = () => {
+    if (!filteredMovies) return [];
+    const totalMovies = filteredMovies.length;
+    const visibleMovies = [];
+
+    for (let i = 0; i < 4; i++) {
+      visibleMovies.push(filteredMovies[(currentSlide + i) % totalMovies]);
+    }
+
+    return visibleMovies;
+  };
+
+  const moviesToShow = getVisibleMovies();
 
   return (
     <div className="px-4 relative overflow-hidden">
       <div className="tabs tabs-boxed bg-base-200 w-fit mx-auto my-4">
-        {MovieTabs.map((item, index) => (
-          <div className={`tab ${tab === item.id ? "tab-active" : ""}`} key={item.href}>
+        {MovieTabs.map((item) => (
+          <div
+            className={`tab ${tab === item.id ? "tab-active" : ""}`}
+            key={item.href}
+          >
             <input type="radio" name="tab" id={item.href} hidden />
             <label
               onClick={() => {
                 setTab(item.id);
+                setCurrentSlide(0); // Reset slide position when tab changes
               }}
               htmlFor={item.href}
             >
@@ -101,12 +136,22 @@ function Movies() {
           </div>
         ))}
       </div>
+      <input
+        type="text"
+        placeholder="Tìm kiếm phim..."
+        className="input input-bordered w-full mb-4"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
       {isLoading && (
         <div className="gap-3 overflow-hidden flex">
-          {Array(6)
+          {Array(4)
             .fill(0)
             .map((_, index) => (
-              <div key={index} className="h-[420px] w-[280px] bg-gray-600 animate-pulse rounded-md shadow-xl"></div>
+              <div
+                key={index}
+                className="h-[420px] w-[280px] bg-gray-600 animate-pulse rounded-md shadow-xl"
+              ></div>
             ))}
         </div>
       )}
@@ -114,18 +159,18 @@ function Movies() {
       <section className="gap-3 overflow-hidden flex" ref={sliderRef}>
         <button
           onClick={handleNext}
-          className="absolute right-0 top-1/2  translate-y-1/2 z-10 text-3xl bg-gray-600 rounded-full "
+          className="absolute right-0 top-1/2 translate-y-1/2 z-10 text-3xl bg-gray-600 rounded-full"
         >
           <MdNavigateNext />
         </button>
         <button
           onClick={handlePrev}
-          className="absolute left-0 top-1/2 translate-y-1/2 z-10 text-3xl bg-gray-600 rounded-full "
+          className="absolute left-0 top-1/2 translate-y-1/2 z-10 text-3xl bg-gray-600 rounded-full"
         >
           <MdOutlineNavigateBefore />
         </button>
-        {data &&
-          data.map((item: Movie, index: number) => (
+        {moviesToShow &&
+          moviesToShow.map((item: Movie) => (
             <Link
               to={`/movie/${item.id}`}
               className="card bg-base-100 group shadow-xl w-full overflow-clip min-w-[10rem] min-h-full"
@@ -134,7 +179,9 @@ function Movies() {
               <figure className="w-full overflow-clip">
                 <img
                   src={item.posterPath}
-                  className={"w-full group-hover:scale-110 transition-transform duration-300"}
+                  className={
+                    "w-full group-hover:scale-110 transition-transform duration-300"
+                  }
                   key={item.id}
                   height={500}
                   alt={item.title}
@@ -151,4 +198,5 @@ function Movies() {
     </div>
   );
 }
+
 export default Home;

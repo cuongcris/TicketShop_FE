@@ -10,10 +10,13 @@ type Props = {
 function ShowTimePicker({
   defaultValue,
   onChange,
-  time = "10:00",
-  availableTime = ["10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"],
+  time = "",
+  availableTime = [],
 }: Props) {
-  const activeIndex = useMemo(() => availableTime.findIndex((item) => item === time), [time, availableTime]);
+  const activeIndex = useMemo(
+    () => availableTime.findIndex((item) => item === time),
+    [time, availableTime]
+  );
   return (
     <div>
       <div className="form-control flex-row w-full justify-evenly items-center bg-base-100 px-4 py-2 rounded-md">

@@ -32,18 +32,29 @@ export const router = createBrowserRouter([
         path: "movie/:id",
         element: <MoviePage />,
         loader: async ({ params }) => {
-          const res = await fetch(`https://localhost:7193/api/Movies/${params.id}`);
+          const res = await fetch(
+            `https://localhost:7193/api/Movies/${params.id}`
+          );
           const data = await res.json();
           if (!data) throw new Error("Not found");
           if (data.video) {
             //If movie has trailer, fetch trailer
-            const res = await fetch(
-              `https://api.themoviedb.org/3/movie/${params.id}/videos?api_key=${
-                import.meta.env.VITE_MOVIE_KEY
-              }&language=vi-VN`
-            );
-            const video = await res.json();
-            data.video = video;
+            const options = {
+              method: "GET",
+              headers: {
+                accept: "application/json",
+                Authorization:
+                  "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2NGFkYzQ5NTBlZDg0YzNlOTJkZjA1YjgyNGVlM2Q2MSIsIm5iZiI6MTcyMDU4NDU5Ni44MjA4MTgsInN1YiI6IjY2OGUwODg0NzBjYzc4YzlkNmM4YmRhZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.Y78k2XGQ0X51TyDTtCcDKH4H4siEthbL9r26gBGu2eg",
+              },
+            };
+            fetch(
+              "https://api.themoviedb.org/3/trending/movie/day?language=en-US",
+              options
+            )
+              .then((response) => response.json())
+              .then((response) => console.log(response))
+              .catch((err) => console.error(err));
+            //data.video = video;
           }
           return data; //return movie
         },

@@ -5,16 +5,58 @@ import { useAuth } from "../hooks/useAuth";
 
 function Navbar() {
   const navigate = useLocation();
-  const isMoviePage = useMemo(() => location.pathname.includes("/movie"), [navigate.pathname]);
+  const isMoviePage = useMemo(
+    () => location.pathname.includes("/movie"),
+    [navigate.pathname]
+  );
+
+  // authen
+  const auth = useAuth();
+  const token = auth?.user?.token;
+  const decodedToken = parseJwt(token);
+  console.log("Decoded Token:", JSON.stringify(decodedToken, null, 2));
+  const isAdmin =
+    decodedToken &&
+    decodedToken[
+      "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+    ] === "Admin";
+
+  const items = [
+    {
+      label: "Lịch chiếu",
+      href: "/phim-dang-chieu",
+    },
+    {
+      label: "Đặt vé",
+      href: "/phim-dang-chieu",
+    },
+    {
+      label: "Đăng nhập",
+      href: "/dang-nhap",
+    },
+    {
+      label: "Đăng ký",
+      href: "/dang-ky",
+    },
+  ];
+
+  if (isAdmin) {
+    items.push({
+      label: "Admin",
+      href: "/admin",
+    });
+  }
 
   return (
-    <div className={`navbar bg-primary z-50 ${isMoviePage ? "fixed" : "static"}`}>
+    <div
+      className={`navbar bg-primary z-50 ${isMoviePage ? "fixed" : "static"}`}
+    >
       <div className="flex-none">
-        <NavbarDropdown />
+        <NavbarDropdown items={items} auth={auth} />
       </div>
       <div className="flex-1">
         <h2 className="font-bold text-2xl tracking-wider">
-          <Link to="/">Cinema</Link>
+          <Link to="/">Cinematic</Link>
         </h2>
       </div>
       <div className="flex-none w-fit">
@@ -25,26 +67,8 @@ function Navbar() {
     </div>
   );
 }
-const items = [
-  {
-    label: "Lịch chiếu",
-    href: "/phim-dang-chieu",
-  },
-  {
-    label: "Đặt vé",
-    href: "/phim-dang-chieu",
-  },
-  {
-    label: "Đăng nhập",
-    href: "/dang-nhap",
-  },
-  {
-    label: "Đăng ký",
-    href: "/dang-ky",
-  },
-];
-function NavbarDropdown() {
-  const auth = useAuth();
+
+function NavbarDropdown({ items, auth }) {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -55,7 +79,12 @@ function NavbarDropdown() {
             viewBox="0 0 24 24"
             className="inline-block w-5 h-5 stroke-current"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            ></path>
           </svg>
         </button>
       </DropdownMenu.Trigger>
@@ -93,4 +122,26 @@ function NavbarDropdown() {
     </DropdownMenu.Root>
   );
 }
+
+// Utility function to decode JWT token
+function parseJwt(token) {
+  try {
+    if (!token) {
+      return null;
+    }
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.error("Invalid token", e);
+    return null;
+  }
+}
+
 export default Navbar;

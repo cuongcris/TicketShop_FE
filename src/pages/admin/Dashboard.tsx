@@ -9,6 +9,11 @@ function Dashboard({}: Props) {
   return (
     <div className="mx-auto container grid place-items-center min-h-screen">
       <div className="gap-5 text-lg px-5 flex bg-base-100 py-12 rounded-md">
+        <Link to="/">
+          <button className="btn btn-success btn-outline gap-2">
+            Back Home
+          </button>
+        </Link>
         <Link to={"employee"}>
           <button className="btn btn-primary btn-outline gap-2">
             <FaUsers /> <span>Quản lý nhân viên</span>

@@ -41,7 +41,13 @@ const Register = (props: Props) => {
           <label className="label" htmlFor="email">
             <span className="label-text">Email</span>
           </label>
-          <input type="email" placeholder="Email" className="input input-bordered w-full" id={"email"} required />
+          <input
+            type="email"
+            placeholder="Email"
+            className="input input-bordered w-full"
+            id={"email"}
+            required
+          />
 
           <label className="label" htmlFor="fullname">
             <span className="label-text">Họ và tên</span>
@@ -68,7 +74,13 @@ const Register = (props: Props) => {
           <label className="label" htmlFor="dob">
             <span className="label-text">Ngày sinh</span>
           </label>
-          <input type="date" placeholder="Ngày sinh" className="input input-bordered w-full" id={"dob"} required />
+          <input
+            type="date"
+            placeholder="Ngày sinh"
+            className="input input-bordered w-full"
+            id={"dob"}
+            required
+          />
           <label className="label" htmlFor="password">
             <span className="label-text">Mật khẩu</span>
           </label>
@@ -80,8 +92,19 @@ const Register = (props: Props) => {
             required
           />
         </div>
-        <button className={`btn btn-primary w-full ${loginIsLoading ? "loading" : ""}`}>
+        <button
+          className={`btn btn-primary w-full ${
+            loginIsLoading ? "loading" : ""
+          }`}
+        >
           <span className="label-text">Đăng ký</span>
+        </button>
+        <button
+          type="button"
+          className={`btn btn-primary w-full`}
+          onClick={() => navigate("/dang-nhap")}
+        >
+          <span className="label-text"> Đăng Nhập</span>
         </button>
       </form>
     </div>

@@ -3,7 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { FiArrowRight } from "react-icons/fi";
 import { MdNavigateNext, MdOutlineNavigateBefore } from "react-icons/md";
-import { Navigate, useLoaderData, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Navigate,
+  useLoaderData,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import DatePicker from "../components/DatePicker";
 import SeatMap from "../components/SeatMap";
 import ShowTimePicker from "../components/ShowTimePicker";
@@ -19,7 +24,9 @@ function OnGoingPage() {
   let [searchParams, setSearchParams] = useSearchParams();
   const movieId = searchParams.get("movieId");
 
-  const [movie, setMovie] = useState<Movie | null>(data.find((item) => item.id === movieId) as Movie); //Find movie which get from database by id
+  const [movie, setMovie] = useState<Movie | null>(
+    data.find((item) => item.id === movieId) as Movie
+  ); //Find movie which get from database by id
 
   const sliderRef = useRef<HTMLDivElement>(null);
 
@@ -71,14 +78,20 @@ function OnGoingPage() {
                 selectMovie(item.id.toString());
               }}
               className={`card bg-base-100 group shadow-xl w-full overflow-clip min-w-[10rem] min-h-full transition-all duration-100 cursor-pointer
-              ${movie?.id === item.id ? "border-2 border-blue-500" : "border-2 border-transparent"}
+              ${
+                movie?.id === item.id
+                  ? "border-2 border-blue-500"
+                  : "border-2 border-transparent"
+              }
             `}
               key={item.id}
             >
               <figure className="w-full overflow-clip">
                 <img
                   src={item.posterPath}
-                  className={"w-full group-hover:scale-110 transition-transform duration-300"}
+                  className={
+                    "w-full group-hover:scale-110 transition-transform duration-300"
+                  }
                   key={item.id}
                   height={500}
                   alt={item.title}
@@ -93,12 +106,12 @@ function OnGoingPage() {
           ))}
       </section>
       <Separator.Root className="bg-base-content data-[orientation=horizontal]:h-1 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px my-6 rounded-full" />
-      {movie && <SeletedSeats movie={movie} />}
+      {movie && <SelectedSeats movie={movie} />}
     </div>
   );
 }
 
-//Deafult seats, will be used to reset seats. 10x10 (A1...J10)
+//Default seats, will be used to reset seats. 10x10 (A1...J10)
 const defaultSeats: Seat[] = Array.from({ length: 10 }, (_, i) =>
   Array.from({ length: 10 }, (_, j) => ({
     rowName: String.fromCharCode(65 + i),
@@ -106,30 +119,36 @@ const defaultSeats: Seat[] = Array.from({ length: 10 }, (_, i) =>
   }))
 ).flat();
 
-function SeletedSeats({ movie }: { movie: Movie }) {
+function SelectedSeats({ movie }: { movie: Movie }) {
   const [chosenSeats, setChosenSeats] = useState<Seat[]>([]);
-
   const [time, setTime] = useState("");
+  const [chosenShowTime, setChosenShowTime] = useState<ShowTime | null>(null);
+  const [date, setDate] = useState(new Date());
 
-  const [choosenShowTime, setChoosenShowTime] = useState<ShowTime | null>(null);
-
-  const { data: showTimes, isLoading: showTimeLoading } = useQuery<ShowTime[]>(["showtimes", movie.id], async () => {
-    const res = await fetch(`https://localhost:7193/api/ShowTimes/movie/${movie.id}?movieId=${movie.id}`);
-    const data = await res.json();
-    return data;
-  });
+  const { data: showTimes, isLoading: showTimeLoading } = useQuery<ShowTime[]>(
+    ["showtimes", movie.id],
+    async () => {
+      const res = await fetch(
+        `https://localhost:7193/api/ShowTimes/movie/${movie.id}?movieId=${movie.id}`
+      );
+      const data = await res.json();
+      return data;
+    }
+  );
 
   const { isLoading: isLoadingSeat, data: reservedSeats } = useQuery<Seat[]>(
-    ["seats", movie.id],
+    ["seats", movie.id, time],
     async () => {
-      const seletedShowTime = showTimes?.find((item) => {
+      const selectedShowTime = showTimes?.find((item) => {
         const timeDate = new Date(item.startTime as string);
         //Get hour and minute
         const timeString = `${timeDate.getHours()}:${timeDate.getMinutes()}`;
         return timeString === time;
       });
 
-      const res = await fetch(`https://localhost:7193/api/Seats/Showtime/${seletedShowTime?.id}`);
+      const res = await fetch(
+        `https://localhost:7193/api/Seats/Showtime/${selectedShowTime?.id}`
+      );
       const data = await res.json();
       return data;
     },
@@ -145,31 +164,48 @@ function SeletedSeats({ movie }: { movie: Movie }) {
       setChosenSeats(chosenSeats.filter((item) => item.id !== seat.id));
     } else {
       setChosenSeats([...chosenSeats, seat]);
+      //... la toan tu spraed --> them seat va chosenSeats
+      //Example arr1 = [1, 2, 3];  arr2 = [...arr1, 4, 5]; // arr2 sẽ là [1, 2, 3, 4, 5]
     }
   };
 
-  const [date, setDate] = useState(new Date());
   const navigate = useNavigate();
+
   function handleDateChange(date: Date) {
     setDate(date);
   }
+
   function selectAll() {
     if (!reservedSeats) return;
-    //Select all seats that are not reserved
-    setChosenSeats(defaultSeats.filter((item) => !reservedSeats.find((seat) => seat.id === item.id)));
+    const availableSeats = defaultSeats.filter(
+      (item) =>
+        !reservedSeats.some(
+          (item1) =>
+            item1.seatNumber === item.seatNumber &&
+            item1.rowName == item.rowName
+        )
+    );
+    setChosenSeats(availableSeats);
   }
+
   const times = useMemo(() => {
     if (!showTimes) return [];
 
     //Take only showTimes that in the date selected
     const filteredShowTimes = showTimes.filter((item) => {
       const showTimeDate = new Date(item.startTime as string);
-      return showTimeDate.getDate() === date.getDate() && showTimeDate.getMonth() === date.getMonth();
+      return (
+        showTimeDate.getDate() === date.getDate() &&
+        showTimeDate.getMonth() === date.getMonth()
+      );
     });
 
     //Get all times from showTimes
     const times = filteredShowTimes.map(
-      (item) => `${new Date(item.startTime as string).getHours()}:${new Date(item.startTime as string).getMinutes()}`
+      (item) =>
+        `${new Date(item.startTime as string).getHours()}:${new Date(
+          item.startTime as string
+        ).getMinutes()}`
     );
     return times;
   }, [showTimes, date]);
@@ -180,16 +216,18 @@ function SeletedSeats({ movie }: { movie: Movie }) {
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    console.log("Form submitted");
     const data: CheckoutFormProps = {
       movie,
       seats: chosenSeats,
-      showTime: choosenShowTime as ShowTime,
+      showTime: chosenShowTime as ShowTime,
       date,
     };
     navigate(`/checkout`, {
       state: data,
     });
   }
+
   return (
     <form onSubmit={onSubmit}>
       <div className="grid grid-cols-12 min-h-screen">
@@ -200,7 +238,9 @@ function SeletedSeats({ movie }: { movie: Movie }) {
             <figure className="w-full overflow-clip">
               <img
                 src={movie.posterPath}
-                className={"w-full group-hover:scale-110 transition-transform duration-300"}
+                className={
+                  "w-full group-hover:scale-110 transition-transform duration-300"
+                }
                 key={movie.id}
                 height={500}
                 alt={movie.title}
@@ -229,7 +269,9 @@ function SeletedSeats({ movie }: { movie: Movie }) {
             </div>
           </section>
           <button
-            className={`btn btn-primary w-full rounded-full gap-2 ${chosenSeats.length === 0 ? "btn-disabled" : ""}`}
+            className={`btn btn-primary w-full rounded-full gap-2 ${
+              chosenSeats.length === 0 ? "btn-disabled" : ""
+            }`}
             type="submit"
           >
             <span className="btn-text">Đặt Ngay</span>
@@ -253,22 +295,28 @@ function SeletedSeats({ movie }: { movie: Movie }) {
                   return timeString === time;
                 });
 
-                setChoosenShowTime(set as ShowTime);
+                setChosenShowTime(set as ShowTime);
               }}
               availableTime={times}
             />
-            {isLoading ||
-              (reservedSeats && (
+            {isLoading ? (
+              <div>Loading...</div> // Hiển thị trạng thái loading
+            ) : (
+              reservedSeats && (
                 <SeatMap
-                  defaulSeats={defaultSeats}
+                  defaultSeats={defaultSeats}
                   chosenSeats={chosenSeats}
                   seatToggle={seatToggle}
                   reservedSeats={reservedSeats}
                 />
-              ))}
-            {isLoading && (
-              <button className="btn btn-outline btn-ghost mt-12 btn-sm" onClick={selectAll}>
-                Riêng tư
+              )
+            )}
+            {!isLoading && (
+              <button
+                className="btn btn-outline btn-ghost mt-12 btn-sm"
+                onClick={selectAll}
+              >
+                Mr. Riêng Tư
               </button>
             )}
           </div>

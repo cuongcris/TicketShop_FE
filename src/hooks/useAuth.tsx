@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import appfetch from "../lib/axios";
 
-const authContext = createContext<ReturnType<typeof useProvideAuth> | null>(null);
+const authContext = createContext<ReturnType<typeof useProvideAuth> | null>(
+  null
+);
 
 export function ProvideAuth({ children }: React.PropsWithChildren<{}>) {
   const auth = useProvideAuth();
@@ -61,7 +63,8 @@ function useProvideAuth() {
       },
       {}
     );
-    if (res.status !== 200) throw new Error("Tài khoản hoặc mật khẩu không đúng");
+    if (res.status !== 200)
+      throw new Error("Tài khoản hoặc mật khẩu không đúng");
 
     const data = await res.data;
 
@@ -76,7 +79,13 @@ function useProvideAuth() {
     setUser(user); //Save in state -- shorter to live + faster
     return data;
   };
-  const signup = async ({ dob, email, fullname, password, phoneNumber }: RegisterProps) => {
+  const signup = async ({
+    dob,
+    email,
+    fullname,
+    password,
+    phoneNumber,
+  }: RegisterProps) => {
     try {
       const res = await appfetch("/Authen/register", {
         method: "POST",

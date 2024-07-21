@@ -11,6 +11,7 @@ import { Seat } from "../entity/Seat";
 import { ShowTime } from "../entity/ShowTime";
 import { useToast } from "../hooks/useToast";
 import appfetch from "../lib/axios";
+import React from "react";
 export type CheckoutFormProps = {
   movie: Movie;
   seats: Seat[];
@@ -19,6 +20,7 @@ export type CheckoutFormProps = {
 };
 
 function Checkout() {
+  const [orderLoading, setOrderLoading] = React.useState(false);
   const checkoutProps = useLocation().state as CheckoutFormProps;
   const products = useLoaderData() as Product[];
   if (!checkoutProps) {
@@ -26,7 +28,9 @@ function Checkout() {
   }
   const { movie, seats, showTime, date } = checkoutProps;
   //Track selected combos and its amount
-  const [selectedProducts, setSelectedProducts] = useState<{ [productId: string]: number }>(); //Track selected combos and its amount
+  const [selectedProducts, setSelectedProducts] = useState<{
+    [productId: string]: number;
+  }>(); //Track selected combos and its amount
   //Exm: {'combo1': 3, 'combo2': 1}
   console.log(
     `${selectedProducts}: [${products
@@ -89,11 +93,12 @@ function Checkout() {
     }
 
     //Add seats price
-    total += seats.length * 80000;
+    total += seats.length * 70000;
     return total;
   }, [selectedProducts]);
   const { addToast } = useToast();
   async function placeOrder() {
+    setOrderLoading(true);
     //If no seats selected nor showtime selected, return
     if (!seats.length || !showTime) return;
     //Convert selected products to products array
@@ -132,6 +137,7 @@ function Checkout() {
         {}
       );
       if (res.status === 200) {
+        setOrderLoading(true);
         //Copy order id to clipboard
         navigator.clipboard.writeText(res.data.order.Id);
         addToast({
@@ -142,6 +148,7 @@ function Checkout() {
         });
         console.log(res);
       } else {
+        setOrderLoading(false);
         alert("Đặt vé thất bại");
       }
     } catch (e) {
@@ -151,6 +158,7 @@ function Checkout() {
         type: "error",
         id: "place-order-error",
       });
+      setOrderLoading(false);
       console.log(e);
     }
 
@@ -201,7 +209,10 @@ function Checkout() {
                     >
                       <FiPlus />
                     </button>
-                    <h6>{selectedProducts && selectedProducts[product.id || product.name]}</h6>
+                    <h6>
+                      {selectedProducts &&
+                        selectedProducts[product.id || product.name]}
+                    </h6>
                     <button
                       className="bg-base-content p-2 rounded-full text-base-300 active:scale-95 transition-all duration-200 active:bg-base-content/80"
                       onClick={() => removeCombo(product)}
@@ -225,12 +236,15 @@ function Checkout() {
               <span>Ngày chiếu</span>
               <h3 className="font-bold">
                 <span>
-                  {new Date(showTime.startTime as string).toLocaleDateString("vi-VN", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
+                  {new Date(showTime.startTime as string).toLocaleDateString(
+                    "vi-VN",
+                    {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }
+                  )}
                 </span>
               </h3>
             </section>
@@ -239,7 +253,9 @@ function Checkout() {
             <section className="flex justify-between w-full text-xs lg:text-base ">
               <span>Giờ chiếu</span>
               <h3 className="font-bold">
-                <span>{`${new Date(showTime.startTime as string).getHours()}:${new Date(
+                <span>{`${new Date(
+                  showTime.startTime as string
+                ).getHours()}:${new Date(
                   showTime.endTime as string
                 ).getMinutes()}`}</span>
               </h3>
@@ -262,36 +278,38 @@ function Checkout() {
           <h2 className="text-lg font-bold">{movie.title}</h2>
           <div className="divider divider-horizontal h-[0.05rem] bg-base-content/40 space-y-3 my-3 w-full" />
           <div className="w-full space-y-3 font-semibold">
-            {seats.map((seat) => (
-              <div className="flex justify-between" key={seat.id}>
-                <p>{seat.id}</p>
-                <p>80.000</p>
+            {/* Render seats */}
+            {seats.length > 0 && (
+              <div className="flex justify-between">
+                <p>Vé xem phim (x{seats.length})</p>
+                <p>{(seats.length * 70000).toLocaleString("vi-VN")} đ</p>
               </div>
-            ))}
+            )}
+
+            {/* Render selected combos */}
+            {selectedProducts &&
+              Object.keys(selectedProducts).map((productId) => {
+                const product = products.find(
+                  (product) => product.id === productId
+                );
+                return (
+                  product && (
+                    <div className="flex justify-between" key={productId}>
+                      <p>
+                        {product.name} (x{selectedProducts[productId]})
+                      </p>
+                      <p>
+                        {(
+                          product.price * (selectedProducts[productId] || 0)
+                        ).toLocaleString("vi-VN")}{" "}
+                        đ
+                      </p>
+                    </div>
+                  )
+                );
+              })}
           </div>
-          <div className="w-full space-y-3 font-semibold">
-            {
-              //Render selected combos
-              selectedProducts &&
-                Object.keys(selectedProducts).map((productId) => (
-                  <div className="flex justify-between" key={productId}>
-                    <p className="text-start">
-                      {
-                        //get name of product
-                        products.find((product) => product.id === productId)?.name
-                      }
-                      (x{selectedProducts[productId]})
-                    </p>
-                    <p>
-                      {
-                        //get total price of product
-                        (products.find((product) => product.id === productId)?.price as number).toLocaleString("vi-Vn")
-                      }
-                    </p>
-                  </div>
-                ))
-            }
-          </div>
+
           <div className="divider divider-horizontal h-[0.05rem] bg-base-content/40 space-y-3 my-3 w-full" />
           <div className="flex justify-between w-full font-bold">
             <h3>Tổng tiền</h3>
@@ -303,15 +321,26 @@ function Checkout() {
           <div></div>
 
           <button
-            className="btn btn-primary w-full rounded-full my-4 btn-sm"
+            className={`btn btn-primary w-full rounded-full my-4 btn-sm ${
+              orderLoading ? "loading" : ""
+            } `}
             onClick={() => {
               placeOrder();
             }}
           >
             {/* <Link to="/payment"> */}
-            Thanh toán bằng <span className="text-bold text-error">VNPAY</span>
+            <p>
+              Thanh toán bằng{" "}
+              <span className="text-bold text-error">VNPAY</span>
+            </p>
             {/* </Link> */}
           </button>
+          <a
+            href="/phim-dang-chieu"
+            className="btn btn-primary w-full rounded-full my-4 btn-sm bg-red-500 text-white text-center inline-block py-2 px-4 uppercase leading-none"
+          >
+            Hủy thanh toán
+          </a>
         </article>
       </div>
     </div>
